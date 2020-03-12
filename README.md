@@ -1,4 +1,4 @@
-Based on BindsNET – a spiking neural network simulation library geared towards the development of biologically inspired algorithms for machine learning – this Bachelor-Project tries to replace the forward-step of the "supervised_mnist"-example with the usage of a D-Wave Quantum Annealer or a simulator thereof using D-Waves qbsolv Package.
+Based on BindsNET – a spiking neural network simulation library geared towards the development of biologically inspired algorithms for machine learning – this Bachelor-Project tries to replace the forward-step of the "supervised_mnist"-example (in network.run(...) in bindsnet_qa/network/network.py) with the usage of a D-Wave Quantum Annealer or a simulator thereof using D-Waves qbsolv Package.
 
 Documentation for the BindsNET-package can be found [here](https://bindsnet-docs.readthedocs.io).
 
