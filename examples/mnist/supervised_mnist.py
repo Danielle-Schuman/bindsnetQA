@@ -8,13 +8,13 @@ from torchvision import transforms
 from tqdm import tqdm
 
 
-from bindsnet.datasets import MNIST
-from bindsnet.encoding import PoissonEncoder
-from bindsnet.models import DiehlAndCook2015
-from bindsnet.network.monitors import Monitor
-from bindsnet.utils import get_square_assignments, get_square_weights
-from bindsnet.evaluation import all_activity, proportion_weighting, assign_labels
-from bindsnet.analysis.plotting import (
+from bindsnet_qa.datasets import MNIST
+from bindsnet_qa.encoding import PoissonEncoder
+from bindsnet_qa.models import DiehlAndCook2015
+from bindsnet_qa.network.monitors import Monitor
+from bindsnet_qa.utils import get_square_assignments, get_square_weights
+from bindsnet_qa.evaluation import all_activity, proportion_weighting, assign_labels
+from bindsnet_qa.analysis.plotting import (
     plot_input,
     plot_assignments,
     plot_performance,
@@ -118,6 +118,9 @@ rates = torch.zeros_like(torch.Tensor(n_neurons, 10))
 # Sequence of accuracy estimates.
 accuracy = {"all": [], "proportion": []}
 
+# Labels to determine neuron assignments and spike proportions and estimate accuracy
+labels = torch.empty(update_interval)
+
 spikes = {}
 for layer in set(network.layers):
     spikes[layer] = Monitor(network.layers[layer], state_vars=["s"], time=time)
@@ -154,10 +157,10 @@ for (i, datum) in pbar:
 
         # Compute network accuracy according to available classification strategies.
         accuracy["all"].append(
-            100 * torch.sum(label.long() == all_activity_pred).item() / update_interval
+            100 * torch.sum(labels.long() == all_activity_pred).item() / update_interval
         )
         accuracy["proportion"].append(
-            100 * torch.sum(label.long() == proportion_pred).item() / update_interval
+            100 * torch.sum(labels.long() == proportion_pred).item() / update_interval
         )
 
         print(
@@ -174,12 +177,15 @@ for (i, datum) in pbar:
         )
 
         # Assign labels to excitatory layer neurons.
-        assignments, proportions, rates = assign_labels(spike_record, label, 10, rates)
+        assignments, proportions, rates = assign_labels(spike_record, labels, 10, rates)
+
+    #Add the current label to the list of labels for this update_interval
+    labels[i % update_interval] = label[0]
 
     # Run the network on the input.
     choice = np.random.choice(int(n_neurons / 10), size=n_clamp, replace=False)
     clamp = {"Ae": per_class * label.long() + torch.Tensor(choice).long()}
-    inputs = {"X": image.view(time, 1, 28, 28)}
+    inputs = {"X": image.view(time, 1, 1, 28, 28)}
     network.run(inputs=inputs, time=time, clamp=clamp)
 
     # Get voltage recording.
@@ -203,7 +209,7 @@ for (i, datum) in pbar:
             image.sum(1).view(28, 28), inpt, label=label, axes=inpt_axes, ims=inpt_ims
         )
         spike_ims, spike_axes = plot_spikes(
-            {layer: spikes[layer].get("s") for layer in spikes},
+            {layer: spikes[layer].get("s").view(time, 1, -1) for layer in spikes},
             ims=spike_ims,
             axes=spike_axes,
         )
