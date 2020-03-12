@@ -6,7 +6,7 @@ with open("README.md") as f:
 version = "0.2.5"
 
 setup(
-    name="bindsnet",
+    name="bindsnet_qa",
     version=version,
     description="Spiking neural networks for ML in Python",
     license="AGPL-3.0",

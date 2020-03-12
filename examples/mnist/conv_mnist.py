@@ -6,14 +6,14 @@ from torchvision import transforms
 from time import time as t
 from tqdm import tqdm
 
-from bindsnet.datasets import MNIST
-from bindsnet.encoding import PoissonEncoder
-from bindsnet.network import Network
-from bindsnet.learning import PostPre
-from bindsnet.network.monitors import Monitor
-from bindsnet.network.nodes import DiehlAndCookNodes, Input
-from bindsnet.network.topology import Conv2dConnection, Connection
-from bindsnet.analysis.plotting import (
+from bindsnet_qa.datasets import MNIST
+from bindsnet_qa.encoding import PoissonEncoder
+from bindsnet_qa.network import Network
+from bindsnet_qa.learning import PostPre
+from bindsnet_qa.network.monitors import Monitor
+from bindsnet_qa.network.nodes import DiehlAndCookNodes, Input
+from bindsnet_qa.network.topology import Conv2dConnection, Connection
+from bindsnet_qa.analysis.plotting import (
     plot_input,
     plot_spikes,
     plot_conv2d_weights,

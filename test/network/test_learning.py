@@ -1,9 +1,9 @@
 import torch
 
-from bindsnet.network import Network
-from bindsnet.network.nodes import Input, LIFNodes, SRM0Nodes
-from bindsnet.network.topology import Connection, Conv2dConnection
-from bindsnet.learning import (
+from bindsnet_qa.network import Network
+from bindsnet_qa.network.nodes import Input, LIFNodes, SRM0Nodes
+from bindsnet_qa.network.topology import Connection, Conv2dConnection
+from bindsnet_qa.learning import (
     Hebbian,
     PostPre,
     WeightDependentPostPre,

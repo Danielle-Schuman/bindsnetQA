@@ -1,8 +1,8 @@
 import torch
 
-from bindsnet.network.nodes import LIFNodes
+from bindsnet_qa.network.nodes import LIFNodes
 
-from bindsnet.network.topology import *
+from bindsnet_qa.network.topology import *
 
 
 class TestConnection:

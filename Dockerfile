@@ -15,7 +15,7 @@ RUN apt-get install -y python3-tk
 RUN apt install -y libglib2.0-0
 RUN apt install -y libsm6 libxext6
 
-# Install bindsnet and dependencies
+# Install bindsnet_qa and dependencies
 RUN pip install bindsnet
 
 # Install git

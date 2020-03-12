@@ -193,7 +193,7 @@ class Connection(AbstractConnection):
         """
         if self.norm is not None:
             w_abs_sum = self.w.abs().sum(0).unsqueeze(0)
-            w_abs_sum[w_abs_sum == 0] = 1.0
+            w_abs_sum[w_abs_sum == 0] = 1.0 #?
             self.w *= self.norm / w_abs_sum
 
     def reset_state_variables(self) -> None:

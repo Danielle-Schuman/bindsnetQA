@@ -8,10 +8,10 @@ from torch.nn.modules.utils import _pair
 from copy import deepcopy
 from typing import Union, Sequence, Optional, Tuple, Dict, Iterable
 
-import bindsnet.network.nodes as nodes
-import bindsnet.network.topology as topology
+import bindsnet_qa.network.nodes as nodes
+import bindsnet_qa.network.topology as topology
 
-from bindsnet.network import Network
+from bindsnet_qa.network import Network
 
 
 class Permute(nn.Module):
@@ -426,7 +426,7 @@ def _ann_to_snn_helper(prev, current, node_type, last=False, **kwargs):
 
     :param prev: Previous PyTorch module in artificial neural network.
     :param current: Current PyTorch module in artificial neural network.
-    :param node_type: Type of ``bindsnet.network.nodes`` to use.
+    :param node_type: Type of ``bindsnet_qa.network.nodes`` to use.
     :param last: Whether this connection and layer is the last to be converted.
     :return: Spiking neural network layer and connection corresponding to ``prev`` and
         ``current`` PyTorch modules.

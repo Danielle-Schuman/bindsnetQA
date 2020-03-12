@@ -1,4 +1,4 @@
-from bindsnet.encoding import *
+from bindsnet_qa.encoding import *
 
 import torch
 

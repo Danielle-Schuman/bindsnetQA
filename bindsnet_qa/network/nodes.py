@@ -976,7 +976,7 @@ class DiehlAndCookNodes(Nodes):
         if self.learning:
             self.theta += self.theta_plus * self.s.float().sum(0)
 
-        # Choose only a single neuron to spike.
+        # Choose only a single neuron to spike. TODO: Multinomial genau verstehen?
         if self.one_spike:
             if self.s.any():
                 _any = self.s.view(self.batch_size, -1).any(1)

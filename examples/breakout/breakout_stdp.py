@@ -1,11 +1,11 @@
-from bindsnet.network import Network
-from bindsnet.pipeline import EnvironmentPipeline
-from bindsnet.learning import MSTDP
-from bindsnet.encoding import bernoulli
-from bindsnet.network.topology import Connection
-from bindsnet.environment import GymEnvironment
-from bindsnet.network.nodes import Input, LIFNodes
-from bindsnet.pipeline.action import select_softmax
+from bindsnet_qa.network import Network
+from bindsnet_qa.pipeline import EnvironmentPipeline
+from bindsnet_qa.learning import MSTDP
+from bindsnet_qa.encoding import bernoulli
+from bindsnet_qa.network.topology import Connection
+from bindsnet_qa.environment import GymEnvironment
+from bindsnet_qa.network.nodes import Input, LIFNodes
+from bindsnet_qa.pipeline.action import select_softmax
 
 # Build network.
 network = Network(dt=1.0)

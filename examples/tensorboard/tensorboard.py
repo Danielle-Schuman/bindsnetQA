@@ -7,14 +7,14 @@ from torchvision import transforms
 from time import time as t
 from tqdm import tqdm
 
-import bindsnet.datasets
-from bindsnet.encoding import PoissonEncoder, NullEncoder
+import bindsnet_qa.datasets
+from bindsnet_qa.encoding import PoissonEncoder, NullEncoder
 
-from bindsnet.network import Network
-from bindsnet.learning import PostPre
-from bindsnet.network.nodes import LIFNodes, Input
-from bindsnet.network.topology import Conv2dConnection, Connection
-from bindsnet.analysis.pipeline_analysis import TensorboardAnalyzer, MatplotlibAnalyzer
+from bindsnet_qa.network import Network
+from bindsnet_qa.learning import PostPre
+from bindsnet_qa.network.nodes import LIFNodes, Input
+from bindsnet_qa.network.topology import Conv2dConnection, Connection
+from bindsnet_qa.analysis.pipeline_analysis import TensorboardAnalyzer, MatplotlibAnalyzer
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -46,7 +46,7 @@ padding = 0
 
 # Create the datasets and loaders
 # This is dynamic so you can test each dataset easily
-dataset_type = getattr(bindsnet.datasets, args.dataset)
+dataset_type = getattr(bindsnet_qa.datasets, args.dataset)
 dataset_path = os.path.join("..", "..", "data", args.dataset)
 train_dataset = dataset_type(
     PoissonEncoder(time=time, dt=dt),

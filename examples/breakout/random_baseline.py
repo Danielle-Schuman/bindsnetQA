@@ -2,7 +2,7 @@ import os
 import argparse
 import numpy as np
 
-from bindsnet.environment import GymEnvironment
+from bindsnet_qa.environment import GymEnvironment
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", type=int, default=1000000)

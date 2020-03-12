@@ -13,10 +13,10 @@ from experiments import ROOT_DIR
 
 import brian2genn
 
-from bindsnet.network import Network
-from bindsnet.network.topology import Connection
-from bindsnet.network.nodes import Input, LIFNodes
-from bindsnet.encoding import poisson
+from bindsnet_qa.network import Network
+from bindsnet_qa.network.topology import Connection
+from bindsnet_qa.network.nodes import Input, LIFNodes
+from bindsnet_qa.encoding import poisson
 
 from experiments.benchmark import plot_benchmark
 

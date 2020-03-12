@@ -1,9 +1,9 @@
 import os
 
-from bindsnet.network.monitors import Monitor
-from bindsnet.network.topology import Connection
-from bindsnet.network.nodes import Input, LIFNodes
-from bindsnet.network import Network, load
+from bindsnet_qa.network.monitors import Monitor
+from bindsnet_qa.network.topology import Connection
+from bindsnet_qa.network.nodes import Input, LIFNodes
+from bindsnet_qa.network import Network, load
 
 
 class TestNetwork:

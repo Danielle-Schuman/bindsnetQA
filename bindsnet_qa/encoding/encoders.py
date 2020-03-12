@@ -39,7 +39,7 @@ class SingleEncoder(Encoder):
         # language=rst
         """
         Creates a callable SingleEncoder which encodes as defined in
-        ``bindsnet.encoding.single``
+        ``bindsnet_qa.encoding.single``
 
         :param time: Length of single spike train per input variable.
         :param dt: Simulation time step.
@@ -56,7 +56,7 @@ class RepeatEncoder(Encoder):
         # language=rst
         """
         Creates a callable ``RepeatEncoder`` which encodes as defined in
-        ``bindsnet.encoding.repeat``
+        ``bindsnet_qa.encoding.repeat``
 
         :param time: Length of repeat spike train per input variable.
         :param dt: Simulation time step.
@@ -71,7 +71,7 @@ class BernoulliEncoder(Encoder):
         # language=rst
         """
         Creates a callable ``BernoulliEncoder`` which encodes as defined in
-        :code:`bindsnet.encoding.bernoulli`
+        :code:`bindsnet_qa.encoding.bernoulli`
 
         :param time: Length of Bernoulli spike train per input variable.
         :param dt: Simulation time step.
@@ -90,7 +90,7 @@ class PoissonEncoder(Encoder):
         # language=rst
         """
         Creates a callable PoissonEncoder which encodes as defined in
-        ``bindsnet.encoding.poisson`
+        ``bindsnet_qa.encoding.poisson`
 
         :param time: Length of Poisson spike train per input variable.
         :param dt: Simulation time step.
@@ -105,7 +105,7 @@ class RankOrderEncoder(Encoder):
         # language=rst
         """
         Creates a callable RankOrderEncoder which encodes as defined in
-        :code:`bindsnet.encoding.rank_order`
+        :code:`bindsnet_qa.encoding.rank_order`
 
         :param time: Length of RankOrder spike train per input variable.
         :param dt: Simulation time step.

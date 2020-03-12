@@ -77,8 +77,8 @@ class TorchVisionDatasetPipeline(DataLoaderPipeline):
     # language=rst
     """
     An example implementation of ``DataLoaderPipeline`` that runs all of the datasets
-    inside of ``bindsnet.datasets`` that inherit from an instance of a
-    ``torchvision.datasets``. These are documented in ``bindsnet/datasets/README.md``.
+    inside of ``bindsnet_qa.datasets`` that inherit from an instance of a
+    ``torchvision.datasets``. These are documented in ``bindsnet_qa/datasets/README.md``.
     This specific class just runs an unsupervised network.
     """
 
@@ -95,7 +95,7 @@ class TorchVisionDatasetPipeline(DataLoaderPipeline):
 
         :param network: Arbitrary ``network`` object.
         :param train_ds: A ``torchvision.datasets`` wrapper dataset from
-            ``bindsnet.datasets``.
+            ``bindsnet_qa.datasets``.
 
         Keyword arguments:
 

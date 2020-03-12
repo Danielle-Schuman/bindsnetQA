@@ -9,14 +9,14 @@ from tqdm import tqdm
 
 from time import time as t
 
-from bindsnet import ROOT_DIR
-from bindsnet.datasets import MNIST, DataLoader
-from bindsnet.encoding import PoissonEncoder
-from bindsnet.evaluation import all_activity, proportion_weighting, assign_labels
-from bindsnet.models import DiehlAndCook2015
-from bindsnet.network.monitors import Monitor
-from bindsnet.utils import get_square_weights, get_square_assignments
-from bindsnet.analysis.plotting import (
+from bindsnet_qa import ROOT_DIR
+from bindsnet_qa.datasets import MNIST, DataLoader
+from bindsnet_qa.encoding import PoissonEncoder
+from bindsnet_qa.evaluation import all_activity, proportion_weighting, assign_labels
+from bindsnet_qa.models import DiehlAndCook2015
+from bindsnet_qa.network.monitors import Monitor
+from bindsnet_qa.utils import get_square_weights, get_square_assignments
+from bindsnet_qa.analysis.plotting import (
     plot_input,
     plot_spikes,
     plot_weights,

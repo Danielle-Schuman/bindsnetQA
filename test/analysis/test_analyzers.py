@@ -1,6 +1,6 @@
 import torch
 
-from bindsnet.analysis.pipeline_analysis import TensorboardAnalyzer, MatplotlibAnalyzer
+from bindsnet_qa.analysis.pipeline_analysis import TensorboardAnalyzer, MatplotlibAnalyzer
 
 import matplotlib.pyplot as plt
 import os

@@ -8,7 +8,7 @@ import warnings
 import sys
 import time
 import cv2
-import bindsnet.datasets.preprocess
+import bindsnet_qa.datasets.preprocess
 
 
 from PIL import Image

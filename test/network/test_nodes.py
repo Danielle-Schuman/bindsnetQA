@@ -1,7 +1,7 @@
 import torch
 
-from bindsnet.network import Network
-from bindsnet.network.nodes import (
+from bindsnet_qa.network import Network
+from bindsnet_qa.network.nodes import (
     Nodes,
     Input,
     McCullochPitts,

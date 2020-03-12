@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# bindsnet documentation build configuration file, created by
+# bindsnet_qa documentation build configuration file, created by
 # sphinx-quickstart on Tue May  1 21:54:09 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -57,7 +57,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "bindsnet"
+project = "bindsnet_qa"
 copyright = "2019, Daniel Saunders, Hananel Hazan"
 author = "Daniel Saunders, Hananel Hazan"
 
@@ -152,8 +152,8 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "bindsnet.tex",
-        "bindsnet Documentation",
+        "bindsnet_qa.tex",
+        "bindsnet_qa Documentation",
         "Daniel Saunders, Hananel Hazan",
         "manual",
     )
@@ -164,7 +164,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "bindsnet", "bindsnet Documentation", [author], 1)]
+man_pages = [(master_doc, "bindsnet_qa", "bindsnet_qa Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -175,10 +175,10 @@ man_pages = [(master_doc, "bindsnet", "bindsnet Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "bindsnet",
-        "bindsnet Documentation",
+        "bindsnet_qa",
+        "bindsnet_qa Documentation",
         author,
-        "bindsnet",
+        "bindsnet_qa",
         "One line description of project.",
         "Miscellaneous",
     )

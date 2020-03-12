@@ -1,6 +1,6 @@
-from bindsnet.network.topology import Connection
-from bindsnet.models import TwoLayerNetwork, DiehlAndCook2015
-from bindsnet.network.nodes import Input, LIFNodes, DiehlAndCookNodes
+from bindsnet_qa.network.topology import Connection
+from bindsnet_qa.models import TwoLayerNetwork, DiehlAndCook2015
+from bindsnet_qa.network.nodes import Input, LIFNodes, DiehlAndCookNodes
 
 
 class TestTwoLayerNetwork:

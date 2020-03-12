@@ -8,22 +8,22 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from tqdm import tqdm
 
-from bindsnet.analysis.plotting import (
+from bindsnet_qa.analysis.plotting import (
     plot_input,
     plot_spikes,
     plot_voltages,
     plot_weights,
 )
-from bindsnet.datasets import MNIST
-from bindsnet.encoding import PoissonEncoder
-from bindsnet.network import Network
-from bindsnet.network.nodes import Input
+from bindsnet_qa.datasets import MNIST
+from bindsnet_qa.encoding import PoissonEncoder
+from bindsnet_qa.network import Network
+from bindsnet_qa.network.nodes import Input
 
 # Build a simple two-layer, input-output network.
-from bindsnet.network.monitors import Monitor
-from bindsnet.network.nodes import LIFNodes
-from bindsnet.network.topology import Connection
-from bindsnet.utils import get_square_weights
+from bindsnet_qa.network.monitors import Monitor
+from bindsnet_qa.network.nodes import LIFNodes
+from bindsnet_qa.network.topology import Connection
+from bindsnet_qa.utils import get_square_weights
 
 
 parser = argparse.ArgumentParser()

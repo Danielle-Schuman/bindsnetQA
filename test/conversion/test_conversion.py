@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from bindsnet.conversion import ann_to_snn
+from bindsnet_qa.conversion import ann_to_snn
 
 
 class FullyConnectedNetwork(nn.Module):

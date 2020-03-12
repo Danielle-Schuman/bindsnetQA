@@ -1,9 +1,9 @@
 import torch
 
-from bindsnet.network import Network
-from bindsnet.network.monitors import Monitor, NetworkMonitor
-from bindsnet.network.nodes import Input, IFNodes
-from bindsnet.network.topology import Connection
+from bindsnet_qa.network import Network
+from bindsnet_qa.network.monitors import Monitor, NetworkMonitor
+from bindsnet_qa.network.nodes import Input, IFNodes
+from bindsnet_qa.network.topology import Connection
 
 
 class TestMonitor:
