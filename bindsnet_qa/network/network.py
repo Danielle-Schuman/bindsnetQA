@@ -1,5 +1,6 @@
 import tempfile
 from typing import Dict, Optional, Type, Iterable
+import time as clock
 
 import torch
 import dwave_qbsolv as qbs
@@ -370,7 +371,11 @@ class Network(torch.nn.Module):
         # => Rüberklappen kein Problem, da keine Verfälschung
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
+        start = clock.time()
         solutions = list(qbs.QBSolv().sample_qubo(qubo, num_repeats=40, verbosity=-1).samples())
+        end = clock.time()
+        elapsed = end - start
+        print("\n Wall clock time qbsolv: %fs" % elapsed)
         # create tensor for first solution
         solution_t = torch.full((len(solutions[0]), ), False, dtype=torch.bool)
         for i in range(len(solutions[0])):
@@ -521,7 +526,11 @@ class Network(torch.nn.Module):
                 self.layers[l].forward(x=inputs[l][t])
 
             # forward-step with quantum annealing
+            start = clock.time()
             self.forward_qa()
+            end = clock.time()
+            elapsed = end - start
+            print("\n Wall clock time forward_qa(): %fs" % elapsed)
 
             for l in self.layers:
 
