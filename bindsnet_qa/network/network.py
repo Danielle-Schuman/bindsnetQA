@@ -247,7 +247,7 @@ class Network(torch.nn.Module):
 
         return inputs
 
-    def penalty_one_spike(self, layer: str, node: int) -> float:
+    def penalty_one_spike(self, layer: str) -> float:
         # language=rst
         """
         Calculates the penalty-value for the Quantum Annealer which is used to prevent a layer from having
@@ -264,23 +264,31 @@ class Network(torch.nn.Module):
                 if c_v.wmax > 0:
                     # increase punishment by the maximum weight * number of incoming connections
                     penalty += (c_v.wmax * c_v.source.n)
-                if c_v.b[node] > 0:
-                    # if that makes a positive impact for QA, add bias
-                    penalty += c_v.b[node]
+                # max_bias = torch.max(c_v.b)
+                # if max_bias > 0: #never the case: is always bias = 0 in our example
+                     # if that makes a positive impact for QA, add bias
+                     # penalty += max_bias
         # punishment is now bigger than the cumulative value of all "new" inputs to the layer in this timestep
-        return penalty
+        # 2* because is needed for "row node" as well as "column node"
+        return 2 * penalty
 
-    def forward_qa(self) -> None:
+    def forward_qa(self, penalties: dict) -> None:
         # language=rst
         """
         Runs a single simulation step.
-        Only works for batch_size = 1.
+        Only works for batch_size = 1 and DiehlAndCook-Network.
         """
         conn = self.connections
         inputs = {}  # shape: number of layers * number of neurons
+        qubo = {}  # shape: (number of neurons * number of layers)^2
+        encoding = {}  # to remember at which row_nr which layer starts, shape: number of layers
+        nr_of_prev_nodes = 0
+
         for l in self.layers:
             l_v = self.layers[l]
             inputs[l] = torch.zeros(1, l_v.n)  # a tensor for each layer
+            encoding[l] = nr_of_prev_nodes
+            nr_of_prev_nodes += l_v.n
 
             # Decay voltages.
             if isinstance(l_v, DiehlAndCookNodes):  # layer Ae
@@ -292,83 +300,95 @@ class Network(torch.nn.Module):
             # else: l_v is instance of Input-Nodes -> does not have a voltage
 
         # prepare Quantum Annealing and get inputs
-        qubo = {}  # shape: (number of neurons * number of layers)^2
-        encoding = {}  # to remember at which row_nr which layer starts, shape: number of layers
-        row_nr = 0
-        column_nr = 0
+        # diagonal & off-diagonal, same layer
+        for l in self.layers:
+            l_v = self.layers[l]
+            if isinstance(l_v, Input):  # Layer X
+                pass  # no calculating spikes -> nothing to do
+            elif isinstance(l, DiehlAndCookNodes):  # Layer Ae
+                # diagonal
+                for node in range(l_v.n):
+                    # Could spike -> needs constraints
+                    if l_v.refrac_count[0, node] == 0:
+                        # = threshold + variable threshold theta - (voltage + connection-bias)
+                        # for c in conn: not needed in this case: always bias = 0
+                            # if c[1] == l:
+                                # l_v.v[0, node] += conn[c].b[node]
+                        nr = node + encoding[l]
+                        qubo[(nr, nr)] = l_v.thresh + l_v.theta[node] - l_v.v[0, node] # + NUDGE?
+                # off-diagonal, same layer
+                if l_v.one_spike:
+                    for node_row in range(l_v.n):
+                        if l_v.refrac_count[0, node_row] == 0:
+                            row_nr = node_row + encoding[l]
+                            for node_column in range((node_row + 1), l_v.n):
+                                # node_column is not in refractory period either
+                                if l_v.refrac_count[0, node_column] == 0:
+                                    column_nr = node_column + encoding[l]
+                                    # penalty to make sure nodes do not spike at the same time
+                                    qubo[(row_nr, column_nr)] += penalties[l]
+            else:  # isinstance(l, LIF-Nodes) (Layer Ai)
+                # diagonal
+                for node in range(l_v.n):
+                    # Could spike -> needs constraints
+                    if l_v.refrac_count[0, node] == 0:
+                        # = threshold - (voltage + connection-bias)
+                        # for c in conn: not needed in this case: always bias = 0
+                            # if c[1] == l:
+                                # l_v.v[0, node] += conn[c].b[node]
+                        nr = node + encoding[l]
+                        qubo[(nr, nr)] = l_v.thresh - l_v.v[0, node] # + NUDGE?
+                # for off-diagonal, same layer: nothing to do
 
-        for l_row in self.layers:
-            l_row_v = self.layers[l_row]
-            encoding[l_row] = row_nr  # it does not matter if we use l_row or l_column here, because of symmetry
+        # off-diagonal, with connections
+        for c in conn:
+            # to ensure we work in the upper triangular matrix
+            if encoding[c[0]] <= encoding[c[1]]:  # connection goes from row to column
+                l_row = c[0]
+                l_row_v = self.layers[l_row]
+                s_view = l_row_v.s.float().view(l_row_v.s.size(0), -1)[0]
+                l_column = c[1]
+                l_column_v = self.layers[l_column]
 
-            for node_row in range(l_row_v.n):
+                for node_column in range(l_column_v.n):
+                    # is not in refractory period (has not just spiked) -> could spike
+                    if l_column_v.refrac_count[0, node_column] == 0:
+                        column_nr = node_column + encoding[l_column]
+                        for node_row in range(l_row_v.n):
+                            inp = s_view[node_row] * conn[(l_row, l_column)].w[node_row, node_column]
+                            row_nr = node_row + encoding[l_row]
+                            qubo[(row_nr, column_nr)] = -1 * inp
+                            inputs[l_column][0, node_column] += inp
 
-                for l_column in self.layers:
-                    l_column_v = self.layers[l_column]
-                    for node_column in range(l_column_v.n):
-                        # diagonal
-                        if l_row == l_column and node_row == node_column:
+            else:  # connection goes from column to row
+                l_row = c[1]
+                l_row_v = self.layers[l_row]
+                l_column = c[0]
+                l_column_v = self.layers[l_column]
+                s_view = l_column_v.s.float().view(l_column_v.s.size(0), -1)[0]
 
-                            # is Input-Node -> no calculating spikes
-                            if isinstance(l_column_v, Input):
-                                qubo[(row_nr, column_nr)] = 0
-                            # has just spiked (is in refractory period) -> no calculating spikes
-                            elif l_column_v.refrac_count[0, node_column] > 0:
-                                qubo[(row_nr, column_nr)] = 0
-                            # Could spike -> needs constraints
-                            else:
-                                # = threshold (+ variable threshold theta) - (voltage + connection-bias)
-                                for c in conn:
-                                    if c[1] == l_column:
-                                        l_column_v.v[0, node_column] += conn[c].b[node_column]
-                                qubo[(row_nr, column_nr)] = l_column_v.thresh - l_column_v.v[0, node_column]  # + NUDGE?
-                                if isinstance(l_column_v, DiehlAndCookNodes):
-                                    qubo[(row_nr, column_nr)] += l_column_v.theta[node_column]
-
-                        # off-diagonal
-                        else:
-                            # default (as basis to add weighted spikes, stays like this if
-                            # no connection (and not both DiehlAndCookNodes),
-                            # because nodes independent -> neutral considering spiking
-                            # or in refractory period -> no calculating spikes)
-                            qubo[(row_nr, column_nr)] = 0
-
-                            # is no Input-Node -> calculating spikes
-                            if not isinstance(l_column_v, Input):
-                                # is not in refractory period (has not just spiked) -> could spike
-                                if l_column_v.refrac_count[0, node_column] == 0:
-                                    # with existing connection
-                                    if (l_row, l_column) in conn:
-                                        s_view = l_row_v.s.float().view(l_row_v.s.size(0), -1)[0, node_row]
-                                        inp = s_view * conn[(l_row, l_column)].w[node_row, node_column]
-                                        qubo[(row_nr, column_nr)] -= inp
-                                        inputs[l_column][0, node_column] += inp
-                                    # both of layer Ae and one_spike and node_row is not in refractory period either
-                                    elif isinstance(l_column_v,
-                                                DiehlAndCookNodes) and l_column == l_row and l_column_v.one_spike and \
-                                        l_row_v.refrac_count[0, node_row] == 0:
-                                        qubo[(row_nr, column_nr)] += self.penalty_one_spike(l_column, node_column)
-                                    # else: qubo[(row_nr, column_nr)] = 0 stays
-                                # else: qubo[(row_nr, column_nr)] = 0 stays, because of refractory period
-                            # else: qubo[(row_nr, column_nr)] = 0 stays, because Input-Node -> no caculating spikes
-
-                        column_nr += 1
-
-                column_nr = 0
-                row_nr += 1
+                for node_row in range(l_row_v.n):
+                    # is not in refractory period (has not just spiked) -> could spike
+                    if l_row_v.refrac_count[0, node_row] == 0:
+                        row_nr = node_row + encoding[l_row]
+                        for node_column in range(l_column_v.n):
+                            inp = s_view[node_column] * conn[(l_column, l_row)].w[node_column, node_row]
+                            column_nr = node_column + encoding[l_column]
+                            qubo[(row_nr, column_nr)] = -1 * inp
+                            inputs[l_row][0, node_row] += inp
 
         # Wegen Hin- und Rückconnection: Verfälscht "Rüberklappen" Inhalt,
         # da connection von Ae nach Ai ≠ connection von Ai nach Ae?
         # -> Nein, denn:
         # Wenn Input-spike auf connection Ae->Ai, dann Ae-neuron in refrac-Period
-        # -> bekommt keine Input-spikes Ai->Ae, sondern 0
+        # -> bekommt keine Input-spikes Ai->Ae, sondern leer
         # -> ok, weil insgesamt bei Klappen der Wert dann nur der von Ae->Ai ist
         # Wenn Input-spike auf connection Ai->Ae, dann Ai-neuron in refrac-Period
-        # -> bekommt keine Input-spikes Ae->Ai, sondern 0
+        # -> bekommt keine Input-spikes Ae->Ai, sondern leer
         # -> ok, weil insgesamt bei Klappen der Wert dann nur der von Ai->Ae ist
-        # Beide gleichzeitig Input-Spike -> auch kein Problem: Wert 0
+        # Beide gleichzeitig Input-Spike -> beide in refrac-Period -> auch kein Problem: Wert leer
         # Beide gleichzeitig kein Input-Spike -> Wert auf beiden Connections = w * 0 = 0
-        # => Rüberklappen kein Problem, da keine Verfälschung
+        # => "Rüberklappen" kein Problem, da keine Verfälschung
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
         start = clock.time()
@@ -379,8 +399,13 @@ class Network(torch.nn.Module):
         # create tensor for first solution
         solution_t = torch.full((len(solutions[0]), ), False, dtype=torch.bool)
         for i in range(len(solutions[0])):
-            if solutions[0][i] == 1:
-                solution_t[i] = True
+            # if all qubo-values for a node = 0, i.e. are empty,
+            # (this could theoretically happen for a node of Layer Ai that has been in its refrac-Period for a while
+            # if all Nodes of Layer Ae where to be in their refrac-Period simultaneously)
+            # the qubo – and thus the solution – will not contain an index i for this node
+            if i in solutions[0]:
+                if solutions[0][i] == 1:
+                    solution_t[i] = True
 
         for l in self.layers:
             l_v = self.layers[l]
@@ -395,7 +420,7 @@ class Network(torch.nn.Module):
                 l_v.s = spikes
 
                 # Integrate inputs into voltage
-                # (bias already added (if not in refrac-period), inputs are zero where in refrac-period
+                # (bias not necessary, as always = 0 in this example, inputs are zero where in refrac-period
                 # -> no need to check, Input-layer does not have voltage)
                 l_v.v += inputs[l]
 
@@ -518,6 +543,13 @@ class Network(torch.nn.Module):
         # Effective number of timesteps.
         timesteps = int(time / self.dt)
 
+        # calculate possible Quantum Annealing penalties once
+        penalties = {}
+        for l in self.layers:
+            if isinstance(self.layers[l], DiehlAndCookNodes):
+                if self.layers[l].one_spike:
+                    penalties[l] = self.penalty_one_spike(layer=l)
+
         # Simulate network activity for `time` timesteps.
         for t in range(timesteps):
 
@@ -527,7 +559,7 @@ class Network(torch.nn.Module):
 
             # forward-step with quantum annealing
             start = clock.time()
-            self.forward_qa()
+            self.forward_qa(penalties)
             end = clock.time()
             elapsed = end - start
             print("\n Wall clock time forward_qa(): %fs" % elapsed)
