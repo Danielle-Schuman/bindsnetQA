@@ -309,21 +309,21 @@ class Network(torch.nn.Module):
                 # diagonal
                 for node in range(l_v.n):
                     # Could spike -> needs constraints
-                    if l_v.refrac_count[0, node] == 0:
+                    if l_v.refrac_count[0, node].item() == 0:
                         # = threshold + variable threshold theta - (voltage + connection-bias)
                         # for c in conn: not needed in this case: always bias = 0
                             # if c[1] == l:
                                 # l_v.v[0, node] += conn[c].b[node]
                         nr = node + encoding[l]
-                        qubo[(nr, nr)] = l_v.thresh + l_v.theta[node] - l_v.v[0, node] # + NUDGE?
+                        qubo[(nr, nr)] = l_v.thresh.item() + l_v.theta[node].item() - l_v.v[0, node].item() # + NUDGE?
                 # off-diagonal, same layer
                 if l_v.one_spike:
                     for node_row in range(l_v.n):
-                        if l_v.refrac_count[0, node_row] == 0:
+                        if l_v.refrac_count[0, node_row].item() == 0:
                             row_nr = node_row + encoding[l]
                             for node_column in range((node_row + 1), l_v.n):
                                 # node_column is not in refractory period either
-                                if l_v.refrac_count[0, node_column] == 0:
+                                if l_v.refrac_count[0, node_column].item() == 0:
                                     column_nr = node_column + encoding[l]
                                     # penalty to make sure nodes do not spike at the same time
                                     qubo[(row_nr, column_nr)] += penalties[l]
@@ -331,13 +331,13 @@ class Network(torch.nn.Module):
                 # diagonal
                 for node in range(l_v.n):
                     # Could spike -> needs constraints
-                    if l_v.refrac_count[0, node] == 0:
+                    if l_v.refrac_count[0, node].item() == 0:
                         # = threshold - (voltage + connection-bias)
                         # for c in conn: not needed in this case: always bias = 0
                             # if c[1] == l:
                                 # l_v.v[0, node] += conn[c].b[node]
                         nr = node + encoding[l]
-                        qubo[(nr, nr)] = l_v.thresh - l_v.v[0, node] # + NUDGE?
+                        qubo[(nr, nr)] = l_v.thresh.item() - l_v.v[0, node].item() # + NUDGE?
                 # for off-diagonal, same layer: nothing to do
 
         # off-diagonal, with connections
@@ -346,16 +346,16 @@ class Network(torch.nn.Module):
             if encoding[c[0]] <= encoding[c[1]]:  # connection goes from row to column
                 l_row = c[0]
                 l_row_v = self.layers[l_row]
-                s_view = l_row_v.s.float().view(l_row_v.s.size(0), -1)[0]
+                s_view = l_row_v.s.float().view(l_row_v.s.size(0), -1)[0].tolist()
                 l_column = c[1]
                 l_column_v = self.layers[l_column]
 
                 for node_column in range(l_column_v.n):
                     # is not in refractory period (has not just spiked) -> could spike
-                    if l_column_v.refrac_count[0, node_column] == 0:
+                    if l_column_v.refrac_count[0, node_column].item() == 0:
                         column_nr = node_column + encoding[l_column]
                         for node_row in range(l_row_v.n):
-                            inp = s_view[node_row] * conn[(l_row, l_column)].w[node_row, node_column]
+                            inp = s_view[node_row] * conn[(l_row, l_column)].w[node_row, node_column].item()
                             row_nr = node_row + encoding[l_row]
                             qubo[(row_nr, column_nr)] = -1 * inp
                             inputs[l_column][0, node_column] += inp
@@ -365,14 +365,14 @@ class Network(torch.nn.Module):
                 l_row_v = self.layers[l_row]
                 l_column = c[0]
                 l_column_v = self.layers[l_column]
-                s_view = l_column_v.s.float().view(l_column_v.s.size(0), -1)[0]
+                s_view = l_column_v.s.float().view(l_column_v.s.size(0), -1)[0].tolist()
 
                 for node_row in range(l_row_v.n):
                     # is not in refractory period (has not just spiked) -> could spike
-                    if l_row_v.refrac_count[0, node_row] == 0:
+                    if l_row_v.refrac_count[0, node_row].item() == 0:
                         row_nr = node_row + encoding[l_row]
                         for node_column in range(l_column_v.n):
-                            inp = s_view[node_column] * conn[(l_column, l_row)].w[node_column, node_row]
+                            inp = s_view[node_column] * conn[(l_column, l_row)].w[node_column, node_row].item()
                             column_nr = node_column + encoding[l_column]
                             qubo[(row_nr, column_nr)] = -1 * inp
                             inputs[l_row][0, node_row] += inp
@@ -396,16 +396,6 @@ class Network(torch.nn.Module):
         end = clock.time()
         elapsed = end - start
         print("\n Wall clock time qbsolv: %fs" % elapsed)
-        # create tensor for first solution
-        solution_t = torch.full((len(solutions[0]), ), False, dtype=torch.bool)
-        for i in range(len(solutions[0])):
-            # if all qubo-values for a node = 0, i.e. are empty,
-            # (this could theoretically happen for a node of Layer Ai that has been in its refrac-Period for a while
-            # if all Nodes of Layer Ae where to be in their refrac-Period simultaneously)
-            # the qubo – and thus the solution – will not contain an index i for this node
-            if i in solutions[0]:
-                if solutions[0][i] == 1:
-                    solution_t[i] = True
 
         for l in self.layers:
             l_v = self.layers[l]
@@ -415,8 +405,9 @@ class Network(torch.nn.Module):
                 nr = encoding[l]
                 for node in range(l_v.n):
                     # is not in refractory period (has not just spiked) -> could spike
-                    if l_v.refrac_count[0, node] == 0:
-                        spikes[0][node] = solution_t[nr + node]
+                    if l_v.refrac_count[0, node].item() == 0:
+                        if solutions[0][nr + node] == 1:
+                                spikes[0][node] = True
                 l_v.s = spikes
 
                 # Integrate inputs into voltage
