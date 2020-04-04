@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 from matplotlib.axes import Axes
 from matplotlib.image import AxesImage
+from matplotlib.figure import Figure
 from torch.nn.modules.utils import _pair
 from matplotlib.collections import PathCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -21,7 +22,8 @@ def plot_input(
     axes: List[Axes] = None,
     ims: List[AxesImage] = None,
     figsize: Tuple[int, int] = (8, 4),
-) -> Tuple[List[Axes], List[AxesImage]]:
+    fig: Figure = None
+) -> Tuple[List[Axes], List[AxesImage], Figure]:
     # language=rst
     """
     Plots a two-dimensional image and its corresponding spike-train representation.
@@ -63,7 +65,7 @@ def plot_input(
         ims[0].set_data(local_image)
         ims[1].set_data(local_inpy)
 
-    return axes, ims
+    return axes, ims, fig
 
 
 def plot_spikes(
@@ -73,7 +75,8 @@ def plot_spikes(
     ims: Optional[List[PathCollection]] = None,
     axes: Optional[Union[Axes, List[Axes]]] = None,
     figsize: Tuple[float, float] = (8.0, 4.5),
-) -> Tuple[List[AxesImage], List[Axes]]:
+    fig: Figure = None
+) -> Tuple[List[AxesImage], List[Axes], Figure]:
     # language=rst
     """
     Plot spikes for any group(s) of neurons.
@@ -171,7 +174,7 @@ def plot_spikes(
 
     plt.draw()
 
-    return ims, axes
+    return ims, axes, fig
 
 
 def plot_weights(
@@ -181,7 +184,8 @@ def plot_weights(
     im: Optional[AxesImage] = None,
     figsize: Tuple[int, int] = (5, 5),
     cmap: str = "hot_r",
-) -> AxesImage:
+    fig: Figure = None
+) -> Tuple[AxesImage, Figure]:
     # language=rst
     """
     Plot a connection weight matrix.
@@ -211,7 +215,7 @@ def plot_weights(
     else:
         im.set_data(local_weights)
 
-    return im
+    return im, fig
 
 
 def plot_conv2d_weights(
@@ -351,7 +355,8 @@ def plot_assignments(
     im: Optional[AxesImage] = None,
     figsize: Tuple[int, int] = (5, 5),
     classes: Optional[Sized] = None,
-) -> AxesImage:
+    fig: Figure = None
+) -> Tuple[AxesImage, Figure]:
     # language=rst
     """
     Plot the two-dimensional neuron assignments.
@@ -392,14 +397,15 @@ def plot_assignments(
     else:
         im.set_data(locals_assignments)
 
-    return im
+    return im, fig
 
 
 def plot_performance(
     performances: Dict[str, List[float]],
     ax: Optional[Axes] = None,
     figsize: Tuple[int, int] = (7, 4),
-) -> Axes:
+    fig: Figure = None
+) -> Tuple[Axes, Figure]:
     # language=rst
     """
     Plot training accuracy curves.
@@ -410,7 +416,7 @@ def plot_performance(
     :return: Used for re-drawing the performance plot.
     """
     if not ax:
-        _, ax = plt.subplots(figsize=figsize)
+        fig, ax = plt.subplots(figsize=figsize)
     else:
         ax.clear()
 
@@ -429,7 +435,7 @@ def plot_performance(
     ax.set_yticks(range(0, 110, 10))
     ax.legend()
 
-    return ax
+    return ax, fig
 
 
 def plot_voltages(
@@ -442,7 +448,8 @@ def plot_voltages(
     plot_type: str = "color",
     thresholds: Dict[str, torch.Tensor] = None,
     figsize: Tuple[float, float] = (8.0, 4.5),
-) -> Tuple[List[AxesImage], List[Axes]]:
+    fig: Figure = None
+) -> Tuple[List[AxesImage], List[Axes], Figure]:
     # language=rst
     """
     Plot voltages for any group(s) of neurons.
@@ -657,4 +664,14 @@ def plot_voltages(
 
         plt.tight_layout()
 
-    return ims, axes
+    return ims, axes, fig
+
+
+def save_plot(
+    fig: Figure,
+    directory: str,
+    name: str,
+    n: int
+):
+    file = directory + '/' + name + str(n)
+    fig.savefig(file)
