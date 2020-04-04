@@ -28,13 +28,15 @@ To run a near-replication of the SNN from [this paper](https://www.frontiersin.o
 
 ```
 cd examples/mnist
-python supervised_mnist.py --time 5 --update_interval 3 --n_train 200 --n_neurons 10
+python supervised_mnist.py --time 5 --update_interval 10 --n_train 250 --n_neurons 10
 ```
 
-Caveat: Runs a little slow at the moment.
+Caveat: Runs a little slow.
 
 There are a number of optional command-line arguments which can be passed in, including `--plot` (displays useful monitoring figures), `--time [int]` (determines the number of forward-timesteps per MNIST-Datum),  `--n_train [int]` (total number of training iterations), `--update_interval [int]` (determines how often the current accuracy is shown), and more. 
 Run the script with the `--help` or `-h` flag for more information.
+
+If you want to make plots and save them to a certain directory, use the arguments `--plot -- directory [the path to the directory you want to save them in]`.
 
 ## Running the tests
 
