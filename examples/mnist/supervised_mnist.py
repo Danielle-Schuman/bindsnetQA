@@ -2,7 +2,6 @@ import os
 import torch
 import numpy as np
 import argparse
-import matplotlib.pyplot as plt
 
 from torchvision import transforms
 from tqdm import tqdm
@@ -21,6 +20,7 @@ from bindsnet_qa.analysis.plotting import (
     plot_weights,
     plot_spikes,
     plot_voltages,
+    save_plot
 )
 
 parser = argparse.ArgumentParser()
@@ -34,11 +34,12 @@ parser.add_argument("--inh", type=float, default=22.5)
 parser.add_argument("--time", type=int, default=500)
 parser.add_argument("--dt", type=int, default=1.0)
 parser.add_argument("--intensity", type=float, default=128)
-parser.add_argument("--progress_interval", type=int, default=10)
+parser.add_argument("--progress_interval", type=int, default=10) #does nothing
 parser.add_argument("--update_interval", type=int, default=250)
 parser.add_argument("--train", dest="train", action="store_true")
 parser.add_argument("--test", dest="train", action="store_false")
 parser.add_argument("--plot", dest="plot", action="store_true")
+parser.add_argument("--directory", type=str, default=".")
 parser.add_argument("--gpu", dest="gpu", action="store_true")
 parser.set_defaults(plot=False, gpu=False, train=True)
 
@@ -58,6 +59,7 @@ progress_interval = args.progress_interval
 update_interval = args.update_interval
 train = args.train
 plot = args.plot
+directory = args.directory
 gpu = args.gpu
 
 if gpu:
@@ -131,13 +133,19 @@ print("Begin training.\n")
 
 inpt_axes = None
 inpt_ims = None
+inpt_fig = None
 spike_axes = None
 spike_ims = None
+spike_fig = None
 weights_im = None
+weights_fig = None
 assigns_im = None
+assigns_fig = None
 perf_ax = None
+perf_fig = None
 voltage_axes = None
 voltage_ims = None
+voltage_fig = None
 
 pbar = tqdm(enumerate(dataloader))
 for (i, datum) in pbar:
@@ -195,7 +203,7 @@ for (i, datum) in pbar:
     # Add to spikes recording.
     spike_record[i % update_interval] = spikes["Ae"].get("s").view(time, n_neurons)
 
-    # Optionally plot various simulation information.
+    # Optionally plot various simulation information and save in directory.
     if plot:
         inpt = inputs["X"].view(time, 784).sum(0).view(28, 28)
         input_exc_weights = network.connections[("X", "Ae")].w
@@ -205,22 +213,27 @@ for (i, datum) in pbar:
         square_assignments = get_square_assignments(assignments, n_sqrt)
         voltages = {"Ae": exc_voltages, "Ai": inh_voltages}
 
-        inpt_axes, inpt_ims = plot_input(
-            image.sum(1).view(28, 28), inpt, label=label, axes=inpt_axes, ims=inpt_ims
+        inpt_axes, inpt_ims, inpt_fig = plot_input(
+            image.sum(1).view(28, 28), inpt, label=label, axes=inpt_axes, ims=inpt_ims, fig=inpt_fig
         )
-        spike_ims, spike_axes = plot_spikes(
+        save_plot(fig=inpt_fig, directory=directory, name="input", n=i)
+        spike_ims, spike_axes, spike_fig = plot_spikes(
             {layer: spikes[layer].get("s").view(time, 1, -1) for layer in spikes},
             ims=spike_ims,
             axes=spike_axes,
+            fig=spike_fig
         )
-        weights_im = plot_weights(square_weights, im=weights_im)
-        assigns_im = plot_assignments(square_assignments, im=assigns_im)
-        perf_ax = plot_performance(accuracy, ax=perf_ax)
-        voltage_ims, voltage_axes = plot_voltages(
-            voltages, ims=voltage_ims, axes=voltage_axes
+        save_plot(fig=spike_fig, directory=directory, name="spikes", n=i)
+        weights_im, weights_fig = plot_weights(square_weights, im=weights_im, fig=weights_fig)
+        save_plot(fig=weights_fig, directory=directory, name="weights", n=i)
+        assigns_im, assigns_fig = plot_assignments(square_assignments, im=assigns_im, fig=assigns_fig)
+        save_plot(fig=assigns_fig, directory=directory, name="assignments", n=i)
+        perf_ax, perf_fig = plot_performance(accuracy, ax=perf_ax, fig=perf_fig)
+        save_plot(fig=perf_fig, directory=directory, name="performance", n=i)
+        voltage_ims, voltage_axes, voltage_fig = plot_voltages(
+            voltages, ims=voltage_ims, axes=voltage_axes, fig=voltage_fig
         )
-
-        plt.pause(1e-8)
+        save_plot(fig=voltage_fig, directory=directory, name="voltage", n=i)
 
     network.reset_state_variables()  # Reset state variables.
 
