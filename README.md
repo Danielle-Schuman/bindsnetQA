@@ -1,4 +1,4 @@
-Based on BindsNET – a spiking neural network simulation library geared towards the development of biologically inspired algorithms for machine learning – this Bachelor-Project tries to replace the forward-step of the "supervised_mnist"-example (in network.run(...) in bindsnet_qa/network/network.py) with the usage of a D-Wave Quantum Annealer or a simulator thereof using D-Waves qbsolv Package.
+Based on BindsNET – a spiking neural network simulation library geared towards the development of biologically inspired algorithms for machine learning – this Bachelor-Project tries to replace the forward-step of the "supervised_mnist"-example (in network.run(...) in bindsnet_qa/network/network.py) with the usage of a D-Wave Quantum Annealer or a simulator thereof using D-Waves Leap Hybrid Solver.
 
 Documentation for the BindsNET-package can be found [here](https://bindsnet-docs.readthedocs.io).
 
@@ -22,16 +22,22 @@ Or, to install in editable mode (allows modification of package without re-insta
 pip install -e .
 ```
 
+Subsequently, enter your D-Wave API-Token by running
+```
+dwave config create
+```
+and following the instructions, entering the token in the right place.
+
 ## Getting started
 
 To run a near-replication of the SNN from [this paper](https://www.frontiersin.org/articles/10.3389/fncom.2015.00099/full), issue
 
 ```
 cd examples/mnist
-python supervised_mnist.py --time 5 --update_interval 10 --n_train 250 --n_neurons 10
+python supervised_mnist.py --time 5 --update_interval 10 --n_train 10 --n_neurons 10
 ```
 
-Caveat: Runs a little slow.
+Caveat: Runs very slow (about 10 seconds per leap call), takes up a lot of your hybrid solver time.
 
 There are a number of optional command-line arguments which can be passed in, including `--plot` (displays useful monitoring figures), `--time [int]` (determines the number of forward-timesteps per MNIST-Datum),  `--n_train [int]` (total number of training iterations), `--update_interval [int]` (determines how often the current accuracy is shown), and more. 
 Run the script with the `--help` or `-h` flag for more information.
@@ -52,7 +58,7 @@ Some tests will fail if Open AI `gym` is not installed on your machine.
 TODO
 
 ## Benchmarking
-As of now, it runs slower compared to the original BindsNET-version. Reasons for this are being investigated.
+As of now, it runs slower compared to the original BindsNET-version. Reasons for this are being investigated, might involve sending the problem and solutions from Europe to Canada and back.
 
 ## Citation
 

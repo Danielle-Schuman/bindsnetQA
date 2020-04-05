@@ -1,9 +1,9 @@
 import tempfile
 from typing import Dict, Optional, Type, Iterable
-# import time as clock
+import time as clock
 
 import torch
-import dwave_qbsolv as qbs
+from dwave.system import LeapHybridSampler
 
 from .monitors import AbstractMonitor
 from .nodes import Nodes, DiehlAndCookNodes, Input, LIFNodes
@@ -391,12 +391,12 @@ class Network(torch.nn.Module):
         # => "Rüberklappen" kein Problem, da keine Verfälschung
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
-        # start = clock.time()
+        start = clock.time()
         # ursprüngliche num_repeats=40
-        solutions = list(qbs.QBSolv().sample_qubo(qubo, num_repeats=1, verbosity=-1).samples())
-        # end = clock.time()
-        # elapsed = end - start
-        # print("\n Wall clock time qbsolv: %fs" % elapsed)
+        solutions = LeapHybridSampler().sample_qubo(qubo)
+        end = clock.time()
+        elapsed = end - start
+        print("\n Wall clock time leap: %fs" % elapsed)
 
         for l in self.layers:
             l_v = self.layers[l]
@@ -407,7 +407,7 @@ class Network(torch.nn.Module):
                 for node in range(l_v.n):
                     # is not in refractory period (has not just spiked) -> could spike
                     if l_v.refrac_count[0, node].item() == 0:
-                        if solutions[0][nr + node] == 1:
+                        if solutions.first.sample[nr + node] == 1:
                                 spikes[0][node] = True
                 l_v.s = spikes
 
