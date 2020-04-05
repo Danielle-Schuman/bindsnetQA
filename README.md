@@ -34,7 +34,7 @@ To run a near-replication of the SNN from [this paper](https://www.frontiersin.o
 
 ```
 cd examples/mnist
-python supervised_mnist.py --time 5 --update_interval 10 --n_train 10 --n_neurons 10
+python supervised_mnist.py --time 5 --update_interval 3 --n_train 10 --n_neurons 10
 ```
 
 Caveat: Runs very slow (about 10 seconds per leap call), takes up a lot of your hybrid solver time.
