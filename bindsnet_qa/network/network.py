@@ -3,7 +3,9 @@ from typing import Dict, Optional, Type, Iterable
 import time as clock
 
 import torch
-from hybrid.reference.kerberos import KerberosSampler
+import dimod
+import hybrid
+from hybrid.reference.qbsolv import SimplifiedQbsolv
 
 from .monitors import AbstractMonitor
 from .nodes import Nodes, DiehlAndCookNodes, Input, LIFNodes
@@ -280,7 +282,9 @@ class Network(torch.nn.Module):
         """
         conn = self.connections
         inputs = {}  # shape: number of layers * number of neurons
-        qubo = {}  # shape: (number of neurons * number of layers)^2
+        # qubo = {}  # shape: (number of neurons * number of layers)^2
+        diagonal = {}
+        off_diagonal = {}
         encoding = {}  # to remember at which row_nr which layer starts, shape: number of layers
         nr_of_prev_nodes = 0
 
@@ -315,7 +319,7 @@ class Network(torch.nn.Module):
                             # if c[1] == l:
                                 # l_v.v[0, node] += conn[c].b[node]
                         nr = node + encoding[l]
-                        qubo[(nr, nr)] = l_v.thresh.item() + l_v.theta[node].item() - l_v.v[0, node].item() # + NUDGE?
+                        diagonal[nr] = l_v.thresh.item() + l_v.theta[node].item() - l_v.v[0, node].item() # + NUDGE?
                 # off-diagonal, same layer
                 if l_v.one_spike:
                     for node_row in range(l_v.n):
@@ -326,7 +330,7 @@ class Network(torch.nn.Module):
                                 if l_v.refrac_count[0, node_column].item() == 0:
                                     column_nr = node_column + encoding[l]
                                     # penalty to make sure nodes do not spike at the same time
-                                    qubo[(row_nr, column_nr)] += penalties[l]
+                                    off_diagonal[(row_nr, column_nr)] += penalties[l]
             else:  # isinstance(l, LIF-Nodes) (Layer Ai)
                 # diagonal
                 for node in range(l_v.n):
@@ -337,7 +341,7 @@ class Network(torch.nn.Module):
                             # if c[1] == l:
                                 # l_v.v[0, node] += conn[c].b[node]
                         nr = node + encoding[l]
-                        qubo[(nr, nr)] = l_v.thresh.item() - l_v.v[0, node].item() # + NUDGE?
+                        diagonal[nr] = l_v.thresh.item() - l_v.v[0, node].item() # + NUDGE?
                 # for off-diagonal, same layer: nothing to do
 
         # off-diagonal, with connections
@@ -357,7 +361,7 @@ class Network(torch.nn.Module):
                         for node_row in range(l_row_v.n):
                             inp = s_view[node_row] * conn[(l_row, l_column)].w[node_row, node_column].item()
                             row_nr = node_row + encoding[l_row]
-                            qubo[(row_nr, column_nr)] = -1 * inp
+                            off_diagonal[(row_nr, column_nr)] = -1 * inp
                             inputs[l_column][0, node_column] += inp
 
             else:  # connection goes from column to row
@@ -374,7 +378,7 @@ class Network(torch.nn.Module):
                         for node_column in range(l_column_v.n):
                             inp = s_view[node_column] * conn[(l_column, l_row)].w[node_column, node_row].item()
                             column_nr = node_column + encoding[l_column]
-                            qubo[(row_nr, column_nr)] = -1 * inp
+                            off_diagonal[(row_nr, column_nr)] = -1 * inp
                             inputs[l_row][0, node_row] += inp
 
         # Wegen Hin- und Rückconnection: Verfälscht "Rüberklappen" Inhalt,
@@ -393,10 +397,13 @@ class Network(torch.nn.Module):
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
         start = clock.time()
         # ursprüngliche num_repeats=40
-        solutions = KerberosSampler().sample_qubo(qubo, convergence=1)
+        workflow = SimplifiedQbsolv(convergence=1)
+        bqm = dimod.BinaryQuadraticModel(diagonal, off_diagonal, dimod.BINARY)
+        init_state = hybrid.State.from_problem(bqm)
+        solutions = workflow.run(init_state).result()
         end = clock.time()
         elapsed = end - start
-        print("\n Wall clock time Kerberos: %fs" % elapsed)
+        print("\n Wall clock time hybrid_qbsolv: %fs" % elapsed)
 
         for l in self.layers:
             l_v = self.layers[l]
@@ -407,7 +414,7 @@ class Network(torch.nn.Module):
                 for node in range(l_v.n):
                     # is not in refractory period (has not just spiked) -> could spike
                     if l_v.refrac_count[0, node].item() == 0:
-                        if solutions.first.sample[nr + node] == 1:
+                        if solutions.samples.first.sample[nr + node] == 1:
                                 spikes[0][node] = True
                 l_v.s = spikes
 
