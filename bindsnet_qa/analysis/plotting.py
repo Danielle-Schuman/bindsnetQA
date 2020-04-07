@@ -402,6 +402,7 @@ def plot_assignments(
 
 def plot_performance(
     performances: Dict[str, List[float]],
+    update_interval: int,
     ax: Optional[Axes] = None,
     figsize: Tuple[int, int] = (7, 4),
     fig: Figure = None
@@ -411,6 +412,7 @@ def plot_performance(
     Plot training accuracy curves.
 
     :param performances: Lists of training accuracy estimates per voting scheme.
+    :param update_interval: Number of examples per accuracy estimate.
     :param ax: Used for re-drawing the performance plot.
     :param figsize: Horizontal, vertical figure size in inches.
     :return: Used for re-drawing the performance plot.
@@ -421,17 +423,20 @@ def plot_performance(
         ax.clear()
 
     for scheme in performances:
-        ax.plot(
-            range(len(performances[scheme])),
-            [p for p in performances[scheme]],
-            label=scheme,
-        )
+        x = [0]
+        y = [0]
+        if performances[scheme]:
+            x = x + [(i * update_interval)+ update_interval for i in range(len(performances[scheme]))]
+            y = y + [p for p in performances[scheme]]
+        ax.plot(x, y, label=scheme,)
 
     ax.set_ylim([0, 100])
+    end = max([len(performances[scheme]) for scheme in performances]) * update_interval
+    ax.set_xlim([0, end])
     ax.set_title("Estimated classification accuracy")
     ax.set_xlabel("No. of examples")
     ax.set_ylabel("Accuracy")
-    ax.set_xticks(())
+    ax.set_xticks(range(0, (end + update_interval), update_interval))
     ax.set_yticks(range(0, 110, 10))
     ax.legend()
 
