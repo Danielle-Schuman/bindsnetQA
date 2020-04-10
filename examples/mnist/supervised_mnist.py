@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 import argparse
+import time as clock
 
 from torchvision import transforms
 from tqdm import tqdm
@@ -23,6 +24,8 @@ from bindsnet_qa.analysis.plotting import (
     save_plot
 )
 
+start = clock.time()
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--n_neurons", type=int, default=100)
@@ -40,6 +43,7 @@ parser.add_argument("--train", dest="train", action="store_true")
 parser.add_argument("--test", dest="train", action="store_false")
 parser.add_argument("--plot", dest="plot", action="store_true")
 parser.add_argument("--directory", type=str, default=".")
+parser.add_argument("--max_iter", type=str, default=10)
 parser.add_argument("--gpu", dest="gpu", action="store_true")
 parser.set_defaults(plot=False, gpu=False, train=True)
 
@@ -60,6 +64,7 @@ update_interval = args.update_interval
 train = args.train
 plot = args.plot
 directory = args.directory
+max_iter = args.max_iter
 gpu = args.gpu
 
 if gpu:
@@ -194,7 +199,7 @@ for (i, datum) in pbar:
     choice = np.random.choice(int(n_neurons / 10), size=n_clamp, replace=False)
     clamp = {"Ae": per_class * label.long() + torch.Tensor(choice).long()}
     inputs = {"X": image.view(time, 1, 1, 28, 28)}
-    network.run(inputs=inputs, time=time, clamp=clamp)
+    network.run(inputs=inputs, time=time, clamp=clamp, max_iter=max_iter)
 
     # Get voltage recording.
     exc_voltages = exc_voltage_monitor.get("v")
@@ -226,10 +231,11 @@ for (i, datum) in pbar:
         save_plot(fig=spike_fig, directory=directory, name="spikes", n=i)
         weights_im, weights_fig = plot_weights(square_weights, im=weights_im, fig=weights_fig)
         save_plot(fig=weights_fig, directory=directory, name="weights", n=i)
-        assigns_im, assigns_fig = plot_assignments(square_assignments, im=assigns_im, fig=assigns_fig)
-        save_plot(fig=assigns_fig, directory=directory, name="assignments", n=i)
-        perf_ax, perf_fig = plot_performance(accuracy, ax=perf_ax, fig=perf_fig)
-        save_plot(fig=perf_fig, directory=directory, name="performance", n=i)
+        if i % update_interval == 0:
+            assigns_im, assigns_fig = plot_assignments(square_assignments, im=assigns_im, fig=assigns_fig)
+            save_plot(fig=assigns_fig, directory=directory, name="assignments", n=i)
+            perf_ax, perf_fig = plot_performance(accuracy, update_interval=update_interval, ax=perf_ax, fig=perf_fig)
+            save_plot(fig=perf_fig, directory=directory, name="performance", n=i)
         voltage_ims, voltage_axes, voltage_fig = plot_voltages(
             voltages, ims=voltage_ims, axes=voltage_axes, fig=voltage_fig
         )
@@ -239,3 +245,6 @@ for (i, datum) in pbar:
 
 print("Progress: %d / %d \n" % (n_train, n_train))
 print("Training complete.\n")
+end = clock.time()
+elapsed = end - start
+print("Wall clock time taken: %fs." % elapsed)
