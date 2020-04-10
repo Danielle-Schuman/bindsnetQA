@@ -392,7 +392,6 @@ class Network(torch.nn.Module):
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
         start = clock.time()
-        # ursprüngliche num_repeats=40
         solutions = LeapHybridSampler().sample_qubo(qubo)
         end = clock.time()
         elapsed = end - start
