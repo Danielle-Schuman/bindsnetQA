@@ -532,7 +532,7 @@ def plot_voltages(
                     )
 
                 args = (v[0], n_neurons[v[0]][0], n_neurons[v[0]][1], time[0], time[1])
-                plt.title("%s voltages for neurons (%d - %d) from t = %d to %d " % args)
+                plt.title("%s voltages for neurons (%d - %d) from t = %d to %d \n" % args)
                 plt.xlabel("Time (ms)")
 
                 if plot_type == "line":
@@ -578,7 +578,7 @@ def plot_voltages(
                     )
                 args = (v[0], n_neurons[v[0]][0], n_neurons[v[0]][1], time[0], time[1])
                 axes[i].set_title(
-                    "%s voltages for neurons (%d - %d) from t = %d to %d " % args
+                    "%s voltages for neurons (%d - %d) from t = %d to %d \n" % args
                 )
 
             for ax in axes:
@@ -590,6 +590,11 @@ def plot_voltages(
             plt.setp(axes, xlabel="Simulation time", ylabel="Voltage")
 
         plt.tight_layout()
+        for ax in axes:
+            div = make_axes_locatable(ax)
+            cax = div.append_axes("right", size="5%", pad=0.10)
+            plt.colorbar(ims[list(axes).index(ax)], cax=cax)
+        fig.tight_layout()
 
     else:
         # Plotting figure given
@@ -620,7 +625,7 @@ def plot_voltages(
                     )
                 args = (v[0], n_neurons[v[0]][0], n_neurons[v[0]][1], time[0], time[1])
                 axes.set_title(
-                    "%s voltages for neurons (%d - %d) from t = %d to %d " % args
+                    "%s voltages for neurons (%d - %d) from t = %d to %d \n" % args
                 )
                 axes.set_aspect("auto")
 
@@ -656,7 +661,7 @@ def plot_voltages(
                     )
                 args = (v[0], n_neurons[v[0]][0], n_neurons[v[0]][1], time[0], time[1])
                 axes[i].set_title(
-                    "%s voltages for neurons (%d - %d) from t = %d to %d " % args
+                    "%s voltages for neurons (%d - %d) from t = %d to %d \n" % args
                 )
 
             for ax in axes:

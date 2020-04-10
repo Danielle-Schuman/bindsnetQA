@@ -272,7 +272,7 @@ class Network(torch.nn.Module):
         # 2* because is needed for "row node" as well as "column node"
         return 2 * penalty
 
-    def forward_qa(self, penalties: dict) -> None:
+    def forward_qa(self, penalties: dict, num_repeats: int) -> None:
         # language=rst
         """
         Runs a single simulation step.
@@ -392,11 +392,12 @@ class Network(torch.nn.Module):
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
         # start = clock.time()
-        # ursprüngliche num_repeats=40
-        solutions = list(qbs.QBSolv().sample_qubo(qubo, num_repeats=1, verbosity=-1).samples())
+        # originally num_repeats=40, seems to work well with num_repeats=1, too (-> now default)
+        solution = qbs.QBSolv().sample_qubo(qubo, num_repeats=num_repeats, verbosity=-1)
         # end = clock.time()
         # elapsed = end - start
         # print("\n Wall clock time qbsolv: %fs" % elapsed)
+        print("\n Energy of qbsolv-solution: %f" % solution.first.energy)
 
         for l in self.layers:
             l_v = self.layers[l]
@@ -407,7 +408,7 @@ class Network(torch.nn.Module):
                 for node in range(l_v.n):
                     # is not in refractory period (has not just spiked) -> could spike
                     if l_v.refrac_count[0, node].item() == 0:
-                        if solutions[0][nr + node] == 1:
+                        if solution.first.sample[nr + node] == 1:
                                 spikes[0][node] = True
                 l_v.s = spikes
 
@@ -436,7 +437,7 @@ class Network(torch.nn.Module):
                         l_v.x.masked_fill_(l_v.s != 0, 1)
 
     def run(
-        self, inputs: Dict[str, torch.Tensor], time: int, one_step=False, **kwargs
+        self, inputs: Dict[str, torch.Tensor], time: int, num_repeats: int, one_step=False, **kwargs
     ) -> None:
         # language=rst
         """
@@ -448,6 +449,7 @@ class Network(torch.nn.Module):
         :param one_step: Whether to run the network in "feed-forward" mode, where inputs
             propagate all the way through the network in a single simulation time step.
             Layers are updated in the order they are added to the network.
+        :param int num_repeats: Number of iterations the QA-simulator runs the problem
 
         Keyword arguments:
 
@@ -551,7 +553,7 @@ class Network(torch.nn.Module):
 
             # forward-step with quantum annealing
             # start = clock.time()
-            self.forward_qa(penalties)
+            self.forward_qa(penalties, num_repeats=num_repeats)
             # end = clock.time()
             # elapsed = end - start
             # print("\n Wall clock time forward_qa(): %fs" % elapsed)

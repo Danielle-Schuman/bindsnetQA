@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 import argparse
+import time as clock
 
 from torchvision import transforms
 from tqdm import tqdm
@@ -23,6 +24,8 @@ from bindsnet_qa.analysis.plotting import (
     save_plot
 )
 
+start = clock.time()
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--n_neurons", type=int, default=100)
@@ -40,6 +43,7 @@ parser.add_argument("--train", dest="train", action="store_true")
 parser.add_argument("--test", dest="train", action="store_false")
 parser.add_argument("--plot", dest="plot", action="store_true")
 parser.add_argument("--directory", type=str, default=".")
+parser.add_argument("--num_repeats", type=str, default=1)
 parser.add_argument("--gpu", dest="gpu", action="store_true")
 parser.set_defaults(plot=False, gpu=False, train=True)
 
@@ -60,6 +64,7 @@ update_interval = args.update_interval
 train = args.train
 plot = args.plot
 directory = args.directory
+num_repeats = args.num_repeats
 gpu = args.gpu
 
 if gpu:
@@ -194,7 +199,7 @@ for (i, datum) in pbar:
     choice = np.random.choice(int(n_neurons / 10), size=n_clamp, replace=False)
     clamp = {"Ae": per_class * label.long() + torch.Tensor(choice).long()}
     inputs = {"X": image.view(time, 1, 1, 28, 28)}
-    network.run(inputs=inputs, time=time, clamp=clamp)
+    network.run(inputs=inputs, time=time, clamp=clamp, num_repeats=num_repeats)
 
     # Get voltage recording.
     exc_voltages = exc_voltage_monitor.get("v")
@@ -240,3 +245,6 @@ for (i, datum) in pbar:
 
 print("Progress: %d / %d \n" % (n_train, n_train))
 print("Training complete.\n")
+end = clock.time()
+elapsed = end - start
+print("Wall clock time taken: %fs." % elapsed)
