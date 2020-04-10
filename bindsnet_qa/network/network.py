@@ -397,6 +397,8 @@ class Network(torch.nn.Module):
         end = clock.time()
         elapsed = end - start
         print("\n Wall clock time leap: %fs" % elapsed)
+        print(solutions.info)
+        print("\n Energy for Leap-Solution: %f" % solutions.first.energy)
 
         for l in self.layers:
             l_v = self.layers[l]
