@@ -272,7 +272,7 @@ class Network(torch.nn.Module):
         # 2* because is needed for "row node" as well as "column node"
         return 2 * penalty
 
-    def forward_qa(self, penalties: dict) -> None:
+    def forward_qa(self, penalties: dict, num_reads: int) -> None:
         # language=rst
         """
         Runs a single simulation step.
@@ -392,11 +392,13 @@ class Network(torch.nn.Module):
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
         start = clock.time()
-        # ursprüngliche num_repeats=40
-        solutions = KerberosSampler().sample_qubo(qubo, convergence=1)
+        # default num_reads=1 (also D-Waves default)
+        solutions = KerberosSampler().sample_qubo(qubo, num_reads=num_reads, convergence=1)
         end = clock.time()
         elapsed = end - start
         print("\n Wall clock time Kerberos: %fs" % elapsed)
+        print(solutions.info)
+        print("\n Energy of Kerberos-Solution: %f" % solutions.first.energy)
 
         for l in self.layers:
             l_v = self.layers[l]
@@ -436,7 +438,7 @@ class Network(torch.nn.Module):
                         l_v.x.masked_fill_(l_v.s != 0, 1)
 
     def run(
-        self, inputs: Dict[str, torch.Tensor], time: int, one_step=False, **kwargs
+        self, inputs: Dict[str, torch.Tensor], time: int, num_reads: int, one_step=False, **kwargs
     ) -> None:
         # language=rst
         """
@@ -551,7 +553,7 @@ class Network(torch.nn.Module):
 
             # forward-step with quantum annealing
             # start = clock.time()
-            self.forward_qa(penalties)
+            self.forward_qa(penalties, num_reads=num_reads)
             # end = clock.time()
             # elapsed = end - start
             # print("\n Wall clock time forward_qa(): %fs" % elapsed)
