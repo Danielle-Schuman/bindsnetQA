@@ -430,12 +430,12 @@ def plot_performance(
             y = y + [p for p in performances[scheme]]
         ax.plot(x, y, label=scheme,)
 
-    ax.set_ylim([0, 100])
+    ax.set_ylim([0, 110])
     end = max([len(performances[scheme]) for scheme in performances]) * update_interval
     ax.set_xlim([0, end])
     ax.set_title("Estimated classification accuracy")
     ax.set_xlabel("No. of examples")
-    ax.set_ylabel("Accuracy")
+    ax.set_ylabel("Accuracy in %")
     ax.set_xticks(range(0, (end + update_interval), update_interval))
     ax.set_yticks(range(0, 110, 10))
     ax.legend()
