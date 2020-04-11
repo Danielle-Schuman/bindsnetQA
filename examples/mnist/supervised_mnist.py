@@ -215,7 +215,6 @@ for (i, datum) in pbar:
         square_weights = get_square_weights(
             input_exc_weights.view(784, n_neurons), n_sqrt, 28
         )
-        square_assignments = get_square_assignments(assignments, n_sqrt)
         voltages = {"Ae": exc_voltages, "Ai": inh_voltages}
 
         inpt_axes, inpt_ims, inpt_fig = plot_input(
@@ -231,15 +230,17 @@ for (i, datum) in pbar:
         save_plot(fig=spike_fig, directory=directory, name="spikes", n=i)
         weights_im, weights_fig = plot_weights(square_weights, im=weights_im, fig=weights_fig)
         save_plot(fig=weights_fig, directory=directory, name="weights", n=i)
-        if i % update_interval == 0:
-            assigns_im, assigns_fig = plot_assignments(square_assignments, im=assigns_im, fig=assigns_fig)
-            save_plot(fig=assigns_fig, directory=directory, name="assignments", n=i)
-            perf_ax, perf_fig = plot_performance(accuracy, update_interval=update_interval, ax=perf_ax, fig=perf_fig)
-            save_plot(fig=perf_fig, directory=directory, name="performance", n=i)
         voltage_ims, voltage_axes, voltage_fig = plot_voltages(
             voltages, ims=voltage_ims, axes=voltage_axes, fig=voltage_fig
         )
         save_plot(fig=voltage_fig, directory=directory, name="voltage", n=i)
+        if i % update_interval == 0:
+            square_assignments = get_square_assignments(assignments, n_sqrt)
+            assigns_im, assigns_fig = plot_assignments(square_assignments, im=assigns_im, fig=assigns_fig)
+            save_plot(fig=assigns_fig, directory=directory, name="assignments", n=i)
+        if i == n_train:
+            perf_ax, perf_fig = plot_performance(accuracy, update_interval=update_interval, ax=perf_ax, fig=perf_fig)
+            save_plot(fig=perf_fig, directory=directory, name="performance", n=i)
 
     network.reset_state_variables()  # Reset state variables.
 
