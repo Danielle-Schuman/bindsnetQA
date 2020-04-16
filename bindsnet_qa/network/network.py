@@ -1,6 +1,6 @@
 import tempfile
 from typing import Dict, Optional, Type, Iterable
-# import time as clock
+import time as clock
 
 import torch
 import dwave_qbsolv as qbs
@@ -343,7 +343,8 @@ class Network(torch.nn.Module):
         # off-diagonal, with connections
         for c in conn:
             # to ensure we work in the upper triangular matrix
-            if encoding[c[0]] <= encoding[c[1]]:  # connection goes from row to column
+            if isinstance(self.layers[c[0]], Input):  # connection X->Ae
+                # we work in the upper triangular matrix, connection goes from row to column
                 l_row = c[0]
                 l_row_v = self.layers[l_row]
                 s_view = l_row_v.s.float().view(l_row_v.s.size(0), -1)[0].tolist()
@@ -360,22 +361,43 @@ class Network(torch.nn.Module):
                             qubo[(row_nr, column_nr)] = -1 * inp
                             inputs[l_column][0, node_column] += inp
 
-            else:  # connection goes from column to row
+            elif isinstance(self.layers[c[0]], DiehlAndCookNodes):  # connection Ae->Ai
+                # we work in the upper triangular matrix, connection goes from row to column
+                l_row = c[0]
+                l_row_v = self.layers[l_row]
+                s_view = l_row_v.s.float().view(l_row_v.s.size(0), -1)[0].tolist()
+                l_column = c[1]
+                l_column_v = self.layers[l_column]
+
+                # actual connections (where weights ≠ 0) are only where node_row = node-column
+                for node in range(l_column_v.n):
+                    # is not in refractory period (has not just spiked) -> could spike
+                    if l_column_v.refrac_count[0, node].item() == 0:
+                        column_nr = node + encoding[l_column]
+                        inp = s_view[node] * conn[(l_row, l_column)].w[node, node].item()
+                        row_nr = node + encoding[l_row]
+                        qubo[(row_nr, column_nr)] = -1 * inp
+                        inputs[l_column][0, node] += inp
+
+            else:  # connection Ai->Ae
+                # we work in the upper triangular matrix, connection goes from column to row
                 l_row = c[1]
                 l_row_v = self.layers[l_row]
                 l_column = c[0]
                 l_column_v = self.layers[l_column]
                 s_view = l_column_v.s.float().view(l_column_v.s.size(0), -1)[0].tolist()
 
+                # actual connections (where weights ≠ 0) are only where node_row ≠ node-column
                 for node_row in range(l_row_v.n):
                     # is not in refractory period (has not just spiked) -> could spike
                     if l_row_v.refrac_count[0, node_row].item() == 0:
                         row_nr = node_row + encoding[l_row]
                         for node_column in range(l_column_v.n):
-                            inp = s_view[node_column] * conn[(l_column, l_row)].w[node_column, node_row].item()
-                            column_nr = node_column + encoding[l_column]
-                            qubo[(row_nr, column_nr)] = -1 * inp
-                            inputs[l_row][0, node_row] += inp
+                            if not node_row == node_column:
+                                inp = s_view[node_column] * conn[(l_column, l_row)].w[node_column, node_row].item()
+                                column_nr = node_column + encoding[l_column]
+                                qubo[(row_nr, column_nr)] = -1 * inp
+                                inputs[l_row][0, node_row] += inp
 
         # Wegen Hin- und Rückconnection: Verfälscht "Rüberklappen" Inhalt,
         # da connection von Ae nach Ai ≠ connection von Ai nach Ae?
@@ -391,12 +413,12 @@ class Network(torch.nn.Module):
         # => "Rüberklappen" kein Problem, da keine Verfälschung
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
-        # start = clock.time()
+        start = clock.time()
         # originally num_repeats=40, seems to work well with num_repeats=1, too (-> now default)
         solution = qbs.QBSolv().sample_qubo(qubo, num_repeats=num_repeats, verbosity=-1)
-        # end = clock.time()
-        # elapsed = end - start
-        # print("\n Wall clock time qbsolv: %fs" % elapsed)
+        end = clock.time()
+        elapsed = end - start
+        print("\n Wall clock time qbsolv: %fs" % elapsed)
         print("\n Energy of qbsolv-solution: %f" % solution.first.energy)
 
         for l in self.layers:
@@ -552,11 +574,11 @@ class Network(torch.nn.Module):
                 self.layers[l].forward(x=inputs[l][t])
 
             # forward-step with quantum annealing
-            # start = clock.time()
+            start = clock.time()
             self.forward_qa(penalties, num_repeats=num_repeats)
-            # end = clock.time()
-            # elapsed = end - start
-            # print("\n Wall clock time forward_qa(): %fs" % elapsed)
+            end = clock.time()
+            elapsed = end - start
+            print("\n Wall clock time forward_qa(): %fs" % elapsed)
 
             for l in self.layers:
 
