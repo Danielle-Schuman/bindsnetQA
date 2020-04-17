@@ -452,11 +452,8 @@ class Network(torch.nn.Module):
                 if l_v.traces:
                     # Decay and set spike traces.
                     l_v.x *= l_v.trace_decay
-
-                    if l_v.traces_additive:
-                        l_v.x += l_v.trace_scale * l_v.s.float()
-                    else:
-                        l_v.x.masked_fill_(l_v.s != 0, 1)
+                    # Since l_v.traces_additive is always false
+                    l_v.x.masked_fill_(l_v.s != 0, 1)
 
     def run(
         self, inputs: Dict[str, torch.Tensor], time: int, num_repeats: int, one_step=False, **kwargs
@@ -521,40 +518,40 @@ class Network(torch.nn.Module):
         """
         # Parse keyword arguments.
         clamps = kwargs.get("clamp", {})
-        unclamps = kwargs.get("unclamp", {})
+        # unclamps = kwargs.get("unclamp", {}) -> not used
         masks = kwargs.get("masks", {})
-        injects_v = kwargs.get("injects_v", {})
+        # injects_v = kwargs.get("injects_v", {}) -> not used
 
-        # Compute reward.
-        if self.reward_fn is not None:
-            kwargs["reward"] = self.reward_fn.compute(**kwargs)
+        # Compute reward. -> not used
+        # if self.reward_fn is not None:
+            # kwargs["reward"] = self.reward_fn.compute(**kwargs)
 
-        # Dynamic setting of batch size.
-        if inputs != {}:
-            for key in inputs:
+        # Dynamic setting of batch size. -> not used
+        # if inputs != {}:
+            # for key in inputs:
                 # goal shape is [time, batch, n_0, ...]
-                if len(inputs[key].size()) == 1:
+                # if len(inputs[key].size()) == 1:
                     # current shape is [n_0, ...]
                     # unsqueeze twice to make [1, 1, n_0, ...]
-                    inputs[key] = inputs[key].unsqueeze(0).unsqueeze(0)
-                elif len(inputs[key].size()) == 2:
+                    # inputs[key] = inputs[key].unsqueeze(0).unsqueeze(0)
+                # elif len(inputs[key].size()) == 2:
                     # current shape is [time, n_0, ...]
                     # unsqueeze dim 1 so that we have
                     # [time, 1, n_0, ...]
-                    inputs[key] = inputs[key].unsqueeze(1)
+                    # inputs[key] = inputs[key].unsqueeze(1)
 
-            for key in inputs:
+            # for key in inputs:
                 # batch dimension is 1, grab this and use for batch size
-                if inputs[key].size(1) != self.batch_size:
-                    self.batch_size = inputs[key].size(1)
+                # if inputs[key].size(1) != self.batch_size:
+                    # self.batch_size = inputs[key].size(1)
 
-                    for l in self.layers:
-                        self.layers[l].set_batch_size(self.batch_size)
+                    # for l in self.layers:
+                        # self.layers[l].set_batch_size(self.batch_size)
 
-                    for m in self.monitors:
-                        self.monitors[m].reset_state_variables()
+                    # for m in self.monitors:
+                        # self.monitors[m].reset_state_variables()
 
-                break
+                # break
 
         # Effective number of timesteps.
         timesteps = int(time / self.dt)
@@ -587,24 +584,24 @@ class Network(torch.nn.Module):
                 if clamp is not None:
                     if clamp.ndimension() == 1:
                         self.layers[l].s[:, clamp] = 1
-                    else:
+                    else: # -> not used
                         self.layers[l].s[:, clamp[t]] = 1
 
                 # Clamp neurons not to spike.-> not used -> kick out?
-                unclamp = unclamps.get(l, None)
-                if unclamp is not None:
-                    if unclamp.ndimension() == 1:
-                        self.layers[l].s[unclamp] = 0
-                    else:
-                        self.layers[l].s[unclamp[t]] = 0
+                # unclamp = unclamps.get(l, None)
+                # if unclamp is not None:
+                    # if unclamp.ndimension() == 1:
+                        # self.layers[l].s[unclamp] = 0
+                    # else:
+                        # self.layers[l].s[unclamp[t]] = 0
 
                 # Inject voltage to neurons. -> not used -> kick out?
-                inject_v = injects_v.get(l, None)
-                if inject_v is not None:
-                    if inject_v.ndimension() == 1:
-                        self.layers[l].v += inject_v
-                    else:
-                        self.layers[l].v += inject_v[t]
+                # inject_v = injects_v.get(l, None)
+                # if inject_v is not None:
+                    # if inject_v.ndimension() == 1:
+                        # self.layers[l].v += inject_v
+                    # else:
+                        # self.layers[l].v += inject_v[t]
 
             # Run synapse updates.
             for c in self.connections:
