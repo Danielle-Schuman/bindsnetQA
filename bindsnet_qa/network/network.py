@@ -1,6 +1,6 @@
 import tempfile
 from typing import Dict, Optional, Type, Iterable
-import time as clock
+# import time as clock
 
 import torch
 import dwave_qbsolv as qbs
@@ -392,12 +392,12 @@ class Network(torch.nn.Module):
         # => "Rüberklappen" kein Problem, da keine Verfälschung
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
-        start = clock.time()
+        # start = clock.time()
         # originally num_repeats=40, seems to work well with num_repeats=1, too (-> now default)
         solution = qbs.QBSolv().sample_qubo(qubo, num_repeats=num_repeats, verbosity=-1)
-        end = clock.time()
-        elapsed = end - start
-        print("\n Wall clock time qbsolv: %fs" % elapsed)
+        # end = clock.time()
+        # elapsed = end - start
+        # print("\n Wall clock time qbsolv: %fs" % elapsed)
         print("\n Energy of qbsolv-solution: %f" % solution.first.energy)
 
         for l in self.layers:
@@ -552,11 +552,11 @@ class Network(torch.nn.Module):
             self.layers['X'].forward(x=inputs['X'][t])
 
             # forward-step with quantum annealing
-            start = clock.time()
+            # start = clock.time()
             self.forward_qa(penalties, num_repeats=num_repeats)
-            end = clock.time()
-            elapsed = end - start
-            print("\n Wall clock time forward_qa(): %fs" % elapsed)
+            # end = clock.time()
+            # elapsed = end - start
+            # print("\n Wall clock time forward_qa(): %fs" % elapsed)
 
             # for l in self.layers: -> happens just for layer Ae
 
