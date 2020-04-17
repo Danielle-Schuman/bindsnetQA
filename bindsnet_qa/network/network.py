@@ -305,7 +305,7 @@ class Network(torch.nn.Module):
             l_v = self.layers[l]
             if isinstance(l_v, Input):  # Layer X
                 pass  # no calculating spikes -> nothing to do
-            elif isinstance(l, DiehlAndCookNodes):  # Layer Ae
+            elif isinstance(l_v, DiehlAndCookNodes):  # Layer Ae
                 # diagonal
                 for node in range(l_v.n):
                     # Could spike -> needs constraints
@@ -326,7 +326,7 @@ class Network(torch.nn.Module):
                                 if l_v.refrac_count[0, node_column].item() == 0:
                                     column_nr = node_column + encoding[l]
                                     # penalty to make sure nodes do not spike at the same time
-                                    qubo[(row_nr, column_nr)] += penalties[l]
+                                    qubo[(row_nr, column_nr)] = penalties[l]
             else:  # isinstance(l, LIF-Nodes) (Layer Ai)
                 # diagonal
                 for node in range(l_v.n):
