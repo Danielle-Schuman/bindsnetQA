@@ -1,0 +1,18 @@
+Evaluation notes:
+- clamping works that way that for every label, there is a specific group of neurons in 
+layer Ae of which a random one gets clamped 
+-> with 10 input-nodes, it's always the same one that gets clamped for a certain label
+-> that's why learning is "deterministic" at this size 
+-> doesn't really say a lot about learning quality
+
+- parameters exc, inh: initial weights between layers Ae and Ai where there are connections (rest = 0): 
+:param exc: Strength of synapse weights from excitatory to inhibitory layer.
+:param inh: Strength of synapse weights from inhibitory to excitatory layer. -> weight is - inh
+
+Changes to code?:
+- Fig. 2C from Diehl&Cook-Paper is similar to our BindsNET performance plot -> maybe call it training accuracy?
+
+Evaluation:
+- with Parameters "--n_neurons 10 --n_train 100 --time 10 --update_interval 5" still deterministic (same for bindsnet and bindsnet_qa), at 100% accuracy after about 50 examples, qb_solv energies at time 3 = ca. -10 and at time 7 either -32.9 or -13 and sometimes at time 10 -28
+- with Parameters "--n_neurons 20 --n_train 75 --time 10 --update_interval 5" not deterministic anymore; both BindsNET and BindsNETqa usually go up to between 80% and 100% quite quickly (until example 50 at most), but with quite some up- and downturns, and then stay there, turning up and down, until the end (75); BindsNETqa overall has very similar performance as BindsNET (although hard to tell because generally a lot of variability), maybe only has a little more up- and downturns than BindsNET, but not significantly, also, up- and downturns tend to be a little smaller, but not significantly; qb_solv energies stay pretty much the same as with 10 neurons
+- Paramters "--n_neurons 30 --n_train 100 --time 10 --update_interval 5": Performance worse than with 20 neurons: more up- and downturns, takes longer until it reaches "good" accuracy (doesn't drop beneath 80% only after 80 examples); BindsNET and BindsNETQA again quite similar performance (BindsNETQA might have a little more, but smaller turns and might even reach higher percentages a tiny bit quicker and more stably); qb_solv energies about the same as with 20 neurons, although last non-zero value tends to be there a lot more often
