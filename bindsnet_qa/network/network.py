@@ -428,11 +428,12 @@ class Network(torch.nn.Module):
                     l_v.theta += l_v.theta_plus * l_v.s.float().sum(0)
 
                 # from super().forward(...) (-> already called for Input-nodes)
-                if l_v.traces:
+                # -> l_v.x not used apart from in Input layer
+                #if l_v.traces:
                     # Decay and set spike traces.
-                    l_v.x *= l_v.trace_decay
+                    #l_v.x *= l_v.trace_decay
                     # Since l_v.traces_additive is always false
-                    l_v.x.masked_fill_(l_v.s != 0, 1)
+                    #l_v.x.masked_fill_(l_v.s != 0, 1)
     # end of forward_qa
 
 
