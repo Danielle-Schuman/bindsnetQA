@@ -43,7 +43,7 @@ parser.add_argument("--train", dest="train", action="store_true")
 parser.add_argument("--test", dest="train", action="store_false")
 parser.add_argument("--plot", dest="plot", action="store_true")
 parser.add_argument("--directory", type=str, default=".")
-parser.add_argument("--num_repeats", type=str, default=1)
+parser.add_argument("--num_repeats", type=int, default=1)
 parser.add_argument("--gpu", dest="gpu", action="store_true")
 parser.set_defaults(plot=False, gpu=False, train=True)
 
