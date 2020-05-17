@@ -272,7 +272,27 @@ class Network(torch.nn.Module):
         # 2* because is needed for "row node" as well as "column node"
         return 2 * penalty
 
-    def forward_qa(self, penalties: dict, num_repeats: int) -> None:
+    def reward_inhibitory(self, layer: str) -> float:
+        # language=rst
+        """
+        Calculates the reward-value for the Quantum Annealer which is used to prevent a layer from "ignoring" inhibitory
+        inputs. To be calculated for inhibitory layer.
+
+        :return: a float value to be used in Quantum Annealing to clamp a certain inhibitory node's qubit, whose node
+            spiked in the last time window (and is now in refractory period), to 1
+        """
+        reward = -1
+        # for every outgoing connection
+        for c in self.connections:
+            if c[0] == layer:
+                c_v = self.connections[c]
+                if c_v.wmin < 0:
+                    # increase reward by the minimum weight * number of outgoing connections
+                    reward += (c_v.wmin * c_v.target.n)
+        # reward is now bigger than the cumulative value of all "new" outputs from the layer in this timestep
+        return reward
+
+    def forward_qa(self, penalties_and_rewards: dict, num_repeats: int) -> None:
         # language=rst
         """
         Runs a single simulation step.
@@ -332,7 +352,7 @@ class Network(torch.nn.Module):
                     if l_ae_v.refrac_count[0, other_ae_node].item() == 0:
                         other_nr = other_ae_node + encoding['Ae']
                         # penalty to make sure nodes do not spike at the same time
-                        qubo[(nr_ae, other_nr)] = penalties['Ae']
+                        qubo[(nr_ae, other_nr)] = penalties_and_rewards['Ae']
 
                 # off-diagonal, Inputs from layer X (connection X->Ae)
                 # we work in the upper triangular matrix, connection goes from row to column
@@ -351,6 +371,8 @@ class Network(torch.nn.Module):
                         column_nr = node_ai + encoding['Ai']
                         qubo[(nr_ae, column_nr)] = -1 * inp
                         inputs['Ae'][0, node_ae] += inp
+
+            # else: reward can be omitted for excitatory neurons -> done here for performance reasons
 
         # Layer Ai of inhibitory LIF-Nodes
         # needed later for Inputs from layer Ae (connection Ae->Ai)
@@ -377,18 +399,26 @@ class Network(torch.nn.Module):
                 nr_ae = node + encoding['Ae']
                 qubo[(nr_ae, nr_ai)] = -1 * inp
                 inputs['Ai'][0, node] += inp
+            else: # might just have spiked -> needs reward to clamp qubit to 1
+                if s_view_ai[node]:  # reward would not harm if neuron did not spike, but embedding easier without
+                    nr_ai = node + encoding['Ai']
+                    qubo[(nr_ai, nr_ai)] = penalties_and_rewards['Ai']
+
 
         # Wegen Hin- und Rückconnection: Verfälscht "Rüberklappen" Inhalt,
         # da connection von Ae nach Ai ≠ connection von Ai nach Ae?
-        # -> Nein, denn:
-        # Wenn Input-spike auf connection Ae->Ai, dann Ae-neuron in refrac-Period
+        # -> Nein, denn: Wenn connection Ae->Ai existiert, dann existiert nicht wirklich Ai->Ae und umgekehrt
+        # Für Situationen, wo dies doch der Fall wäre (Recurrent NN), wäre folgende Argumentation möglich,
+        # solange nicht geclamped wird (da bei clamping Ae-Neuron spikt,
+        # obwohl nicht in refrac-Period (in aktueller Implementierung), hält dann 1. nicht):
+        # 1. Wenn Input-spike auf connection Ae->Ai, dann Ae-neuron in refrac-Period
         # -> bekommt keine Input-spikes Ai->Ae, sondern leer
         # -> ok, weil insgesamt bei Klappen der Wert dann nur der von Ae->Ai ist
-        # Wenn Input-spike auf connection Ai->Ae, dann Ai-neuron in refrac-Period
+        # 2. Wenn Input-spike auf connection Ai->Ae, dann Ai-neuron in refrac-Period
         # -> bekommt keine Input-spikes Ae->Ai, sondern leer
         # -> ok, weil insgesamt bei Klappen der Wert dann nur der von Ai->Ae ist
-        # Beide gleichzeitig Input-Spike -> beide in refrac-Period -> auch kein Problem: Wert leer
-        # Beide gleichzeitig kein Input-Spike -> Wert auf beiden Connections = w * 0 = 0
+        # 3. Beide gleichzeitig Input-Spike -> beide in refrac-Period -> auch kein Problem: Wert leer
+        # 4. Beide gleichzeitig kein Input-Spike -> Wert auf beiden Connections = w * 0 = 0
         # => "Rüberklappen" kein Problem, da keine Verfälschung
 
         # call Quantum Annealer or simulator (creates a triangular matrix out of qubo by itsself)
@@ -539,11 +569,15 @@ class Network(torch.nn.Module):
         timesteps = int(time / self.dt)
 
         # calculate possible Quantum Annealing penalties once
-        penalties = {}
+        penalties_and_rewards = {}
         # for l in self.layers:
         # if isinstance(self.layers[l], DiehlAndCookNodes): -> only layer Ae
         # if self.layers[l].one_spike: -> always the case
-        penalties['Ae'] = self.penalty_one_spike(layer='Ae')
+        penalties_and_rewards['Ae'] = self.penalty_one_spike(layer='Ae')
+        #for all inhibitory layers (can be omitted for excitatory layers for performance reasons)
+        # -> here only layer Ai
+        penalties_and_rewards['Ai'] = self.reward_inhibitory(layer='Ai')
+
 
         # Simulate network activity for `time` timesteps.
         for t in range(timesteps):
@@ -554,7 +588,7 @@ class Network(torch.nn.Module):
 
             # forward-step with quantum annealing
             # start = clock.time()
-            self.forward_qa(penalties, num_repeats=num_repeats)
+            self.forward_qa(penalties_and_rewards, num_repeats=num_repeats)
             # end = clock.time()
             # elapsed = end - start
             # print("\n Wall clock time forward_qa(): %fs" % elapsed)
